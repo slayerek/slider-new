@@ -1,0 +1,241 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<title>slider</title>
+<meta charset="utf-8" />
+<style>
+	body { margin:0;padding:0 }
+	img { display:block;max-width:100% } 
+	
+	.kontener { margin:0 auto;overflow:hidden;position:relative; }
+	
+	.kontener button { margin: 0;position: absolute;top: 50%;transform: translate(0, -50%);cursor:pointer;border:0;height:44px;width:40px; }
+	.kontener button.prev-slide { background: url('images/left-arrow.png')no-repeat;left:0; }
+	.kontener button.next-slide { background: url('images/right-arrow.png')no-repeat;right:0; }
+	
+	.kontener ul { list-style:none;margin:0;padding:0;width:9999px }
+	.kontener ul li { float:left; } 
+	
+	.animacja{ animation-name: przesuniecie;animation-duration: 2s;animation-timing-function: linear;animation-delay: 0s;animation-direction: normal; }
+	
+</style>
+</head>
+<body>
+
+<div class="kontener">
+	<button type="button" class="prev-slide">
+	</button>
+	<ul class='slider-list'  >
+		<li >
+			<img src="images/1.JPG">
+		</li>
+		<li>
+			<img src="images/2.JPG">
+		</li>
+		<li>
+			<img src="images/3.JPG">
+		</li>
+		<li>
+			<img src="images/4.JPG">
+		</li>
+		
+	</ul>
+	<button type="button" class="next-slide">
+	</button>
+</div>	
+
+</body>
+<script>
+
+
+	var sliderCtrl = (function(){
+	
+		
+				
+		var kontener = document.querySelector('.kontener');			
+		var ul = document.querySelector('.slider-list');;
+		var li = Array.prototype.slice.call(document.querySelectorAll('.slider-list li'));
+		var nextSlideBtn = document.querySelector('.next-slide');	
+		var prevSlideBtn = document.querySelector('.prev-slide');	
+		var head = document.querySelector('head');
+		
+		var firstChild , lastChild, liWidth, stylAnim;
+		var px = 'px';
+		
+	
+		function init(start='stop',duration=1000,itemsToShow=3,kontenerWidth=1000){
+			
+			setWidth(itemsToShow,kontenerWidth);
+			resize(itemsToShow,kontenerWidth);
+			
+			
+			
+			if(start !== 'auto'){
+			
+				nextSlideBtn.addEventListener('click', run );
+				prevSlideBtn.addEventListener('click', run);
+		
+			}else{
+				
+				setInterval(function(){ moveSlide('next',start); }, duration);
+				nextSlideBtn.style.display = "none";
+				prevSlideBtn.style.display = "none";
+				
+			}
+			
+		}//init public func
+		
+		
+		function run(evt){
+			
+			var button = evt.target;
+			button.disabled = true;
+			
+			if(button.matches('.next-slide')){
+				moveSlide('next');
+				prevSlideBtn.disabled = true;	
+			}	
+			else if(button.matches('.prev-slide')){
+				moveSlide('prev');
+				nextSlideBtn.disabled = true;		
+			}	
+				
+			button.removeEventListener('click',run);
+				
+		}
+		
+		
+		function moveSlide(directionType,start='stop'){
+			
+			var liWidthPx;
+			firstChild = ul.firstElementChild;
+			lastChild = ul.lastElementChild;
+			//every single start this funcion, we need to check what child is first and last
+			
+			ul.classList.add('animacja');//we need to add class for animation and delete that class every single invoke this function - without that, function will work only once time
+			
+			liWidthPx = liWidth + px;
+			
+			if(directionType === 'next'){
+				
+				ul.addEventListener("animationstart", function animStart(event){
+					
+					event.currentTarget.removeEventListener(event.type, animStart);
+					
+					lastChild.style.marginLeft = '-' + liWidthPx;
+					ul.insertBefore(lastChild,firstChild);
+						
+				});
+				
+			}else if(directionType === 'prev'){
+				
+				liWidthPx = '-' + liWidthPx;
+			
+			}
+			
+			stylAnim = document.createElement('style');
+			stylAnim.innerHTML = '@-webkit-keyframes przesuniecie { 0% { margin-left:0px; } 100% { margin-left:' + liWidthPx +'; }}'; 
+			stylAnim.innerHTML += '@keyframes przesuniecie { 0% { margin-left:0px; } 100% { margin-left:'+ liWidthPx +'; }}';
+			head.appendChild(stylAnim);
+			
+			
+			ul.addEventListener("animationend",function animEnd(event){
+		
+					event.currentTarget.removeEventListener(event.type, animEnd);
+					for(i=0;i<li.length;i++) li[i].style.marginLeft = 0+px;
+					
+					
+					if(directionType === 'next'){
+						nextSlideBtn.addEventListener('click', run);
+					}else if(directionType === 'prev'){
+						ul.appendChild(firstChild);//ul.insertBefore(firstChild, lastChild.nextSibling);
+						prevSlideBtn.addEventListener('click', run);
+					}
+					
+					nextSlideBtn.disabled = false;
+					prevSlideBtn.disabled = false;
+					
+					ul.classList.remove('animacja');
+					
+				
+				}
+			); 
+				
+		}//nextSlide
+		
+		function setWidth(itemsToShow,kontenerWidth){
+			
+			var windowWidth = window.innerWidth;
+			
+			
+			if(windowWidth < 700 ){
+			
+				liWidth  = windowWidth ;
+				
+			}else if( windowWidth > 700 && windowWidth < kontenerWidth  ){
+			
+				liWidth  = kontener.offsetWidth / itemsToShow;
+			
+			}else if( windowWidth > kontenerWidth ){
+				
+				kontener.style.width = kontenerWidth + px;
+				liWidth  = kontener.offsetWidth / itemsToShow;
+			
+			}//if
+			
+			for(i=0;i<li.length;i++) li[i].style.width = liWidth + px;
+	
+		}
+		
+		function resize(itemsToShow,kontenerWidth){
+			
+			window.addEventListener('resize', function changeSize(){
+				
+				var windowWidth = this.innerWidth;
+				
+				
+				if(windowWidth < 700 ){
+					
+					kontener.style.width = windowWidth + px;
+					liWidth  = windowWidth ;
+					
+				}else if( windowWidth > 700 && windowWidth < kontenerWidth  ){
+					
+					kontener.style.width = windowWidth + px;
+					liWidth  = kontener.offsetWidth / itemsToShow;
+				
+				}else if( windowWidth > kontenerWidth ){
+					
+					kontener.style.width = kontenerWidth + px;
+					liWidth  = kontener.offsetWidth / itemsToShow;
+				
+				}//if
+				
+				for(i=0;i<li.length;i++) li[i].style.width = liWidth + px;
+				
+			});
+		
+		}
+
+		
+		return {
+			init : init
+		}
+			
+			
+	})();
+	
+	
+	
+	
+	
+	sliderCtrl.init('stop',2000,3,992);
+	/*
+	first param - set auto ( starts autoplay ), set stop - will be not playing
+	second param - duration
+	third param - items to show in main slide's container
+	fourth param - main container's width
+	*/
+	
+</script>
+</html> 
